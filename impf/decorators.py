@@ -108,9 +108,7 @@ def api_call(f):
     def api_response(self, *args, **kwargs):
         try:
             response = f(self, *args, **kwargs)
-        except Timeout:
-            self.logger.warning(f'Request timed out <{f.__name__}> (*{args}) (**{kwargs})')
-        except ConnectionError:
+        except (Timeout, ConnectionError):
             self.logger.warning(f'Request timed out <{f.__name__}> (*{args}) (**{kwargs})')
         else:
             self.logger.debug(f'<{f.__name__}> [{response.status_code}] {response.text}')

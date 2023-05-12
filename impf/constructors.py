@@ -41,22 +41,21 @@ def browser_options():
 
 def _format_appointments(appointment: list) -> str:
     """ Helper function for formatting an appointment """
-    s = []
-    for a in appointment:
-        s.append(
-            datetime.fromtimestamp(a.get('begin') / 1000).strftime('%a, %d.%m.%Y - %H:%M Uhr')
+    s = [
+        datetime.fromtimestamp(a.get('begin') / 1000).strftime(
+            '%a, %d.%m.%Y - %H:%M Uhr'
         )
+        for a in appointment
+    ]
     return ' x '.join(s)
 
 
 def format_appointments(raw_appointments: list) -> List[str]:
     """ Formats appointments of the REST API to actionable entries """
-    appointments = []
-    for i, appointment in enumerate(raw_appointments):
-        appointments.append(
-            f'- {_format_appointments(appointment)} (appt:{i + 1})'
-        )
-    return appointments
+    return [
+        f'- {_format_appointments(appointment)} (appt:{i + 1})'
+        for i, appointment in enumerate(raw_appointments)
+    ]
 
 
 def get_command() -> str:
@@ -66,8 +65,7 @@ def get_command() -> str:
     if platform.system() == 'Linux': return 'echo "ALARM ALARM ALARM"|espeak'
     if platform.system() == 'Windows': return 'PowerShell -Command "Add-Type –AssemblyName System.Speech; ' \
                                               '(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak(\'ALARM ALARM ALARM\');"'
-    if platform.system() == 'Darwin': return 'say "ALARM ALARM ALARM"'
-    return ''
+    return 'say "ALARM ALARM ALARM"' if platform.system() == 'Darwin' else ''
 
 
 def zulip_send_payload() -> dict:
@@ -80,16 +78,19 @@ def zulip_send_payload() -> dict:
 
 
 def zulip_read_payload() -> dict:
-    request = {
+    return {
         'anchor': 'newest',
         'num_before': 5,
         'num_after': 5,
-        'narrow': [{
-            'operator': settings.ZULIP_TYPE if settings.ZULIP_TYPE == 'stream' else 'sender',
-            'operand': settings.ZULIP_TARGET
-        }],
+        'narrow': [
+            {
+                'operator': settings.ZULIP_TYPE
+                if settings.ZULIP_TYPE == 'stream'
+                else 'sender',
+                'operand': settings.ZULIP_TARGET,
+            }
+        ],
     }
-    return request
 
 
 def zulip_client():

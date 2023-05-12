@@ -77,7 +77,7 @@ class Browser:
         try:
             element = self.wait.until(
                 EC.presence_of_element_located((By.XPATH, '//div[contains(@class, "alert-danger")]')))
-            return not ('keine freien Termine' in element.text)
+            return 'keine freien Termine' not in element.text
         except TimeoutException:
             return True
 
@@ -96,7 +96,7 @@ class Browser:
         """ Check ob Vermittlungscode von Server generell akzeptiert wird """
         try:
             element = self.driver.find_element_by_xpath('//div[contains(@class, "kv-alert-danger")]')
-            return not ('Ungültiger Vermittlungscode' in element.text)
+            return 'Ungültiger Vermittlungscode' not in element.text
         except NoSuchElementException:
             return True
 
@@ -145,13 +145,13 @@ class Browser:
         Selenium doesn't allow us to check HTTP status codes in the Network tab """
         relevant = time() - 120
         sleep(1.5)  # give browser time to catch-up
-        for log in self.driver.get_log('browser'):
-            if log.get('level') == 'SEVERE' \
-                    and log.get('source') == 'network' \
-                    and (log.get('timestamp') / 1000) > relevant \
-                    and '429' in log.get('message'):
-                return True
-        return False
+        return any(
+            log.get('level') == 'SEVERE'
+            and log.get('source') == 'network'
+            and (log.get('timestamp') / 1000) > relevant
+            and '429' in log.get('message')
+            for log in self.driver.get_log('browser')
+        )
 
     def cookie_popup(self) -> None:
         try:
@@ -189,7 +189,9 @@ class Browser:
         element.click()
         self.logger.info(f'Selected Impfzentrum: {self.location_full}')
 
-        submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[@type="submit"]')))
+        submit = self.wait.until(
+            EC.element_to_be_clickable((By.XPATH, '//button[@type="submit"]'))
+        )
         submit.click()
         sleep(.5)
 
@@ -236,7 +238,9 @@ class Browser:
         # Enter Age
         input = self.wait.until(EC.presence_of_element_located((By.XPATH, '//input[@formcontrolname="age"]')))
         input.send_keys(str(settings.AGE))
-        submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[@type="submit"]')))
+        submit = self.wait.until(
+            EC.element_to_be_clickable((By.XPATH, '//button[@type="submit"]'))
+        )
         submit.click()
 
     def claim_code(self) -> None:
@@ -247,7 +251,9 @@ class Browser:
         mail.send_keys(settings.MAIL)
         phone = self.wait.until(EC.presence_of_element_located((By.XPATH, '//input[@formcontrolname="phone"]')))
         phone.send_keys(settings.PHONE)
-        submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[@type="submit"]')))
+        submit = self.wait.until(
+            EC.element_to_be_clickable((By.XPATH, '//button[@type="submit"]'))
+        )
         submit.click()
 
     def enter_sms(self, sms_code: str) -> None:
@@ -256,7 +262,9 @@ class Browser:
         assert title.text == 'SMS Verifizierung'
         code = self.wait.until(EC.presence_of_element_located((By.XPATH, '//input[@formcontrolname="pin"]')))
         code.send_keys(sms_code)
-        submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[@type="submit"]')))
+        submit = self.wait.until(
+            EC.element_to_be_clickable((By.XPATH, '//button[@type="submit"]'))
+        )
         submit.click()
 
     def alert_sms(self) -> str:
@@ -266,8 +274,7 @@ class Browser:
         send_alert(settings.ALERT_SMS.replace('{{ LOCATION }}', self.location_full))
         start = time()
         while (time() - start) < settings.WAIT_SMS_MANUAL:
-            _code = read_backend('sms')
-            if _code:
+            if _code := read_backend('sms'):
                 self.logger.warning(f'Received Code from backend: {_code} - entering now...')
                 send_alert(f'Entering code "{_code}"; check your mails!  \n'
                            f'Thanks for using RAUSYS Technologies :)')
@@ -312,8 +319,7 @@ class Browser:
 
         start = time()
         while (time() - start) < settings.WAIT_SMS_MANUAL:
-            _code = read_backend('appt')
-            if _code:
+            if _code := read_backend('appt'):
                 self.logger.warning(f'Received Appointment indicator from backend: {_code} - booking now...')
                 if api.book_appointment(appointments, int(_code)) or self.book_appointment(int(_code)):
                     appointment = fappointments[int(_code) - 1].replace("* ", "").replace(f' (appt:{_code})', '')
@@ -341,7 +347,9 @@ class Browser:
             element.clear()
             element.send_keys(code)
 
-        submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[@type="submit"]')))
+        submit = self.wait.until(
+            EC.element_to_be_clickable((By.XPATH, '//button[@type="submit"]'))
+        )
         submit.click()
 
     @shadow_ban
@@ -393,7 +401,14 @@ class Browser:
         elements[appointment-1].click()
 
         try:
-            submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[@type="submit" and contains(text(), "AUSWÄHLEN")]')))
+            submit = self.wait.until(
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        '//button[@type="submit" and contains(text(), "AUSWÄHLEN")]',
+                    )
+                )
+            )
             submit.click()
         except:
             # Button not clickable – timer likely expired due to racing condition; attempting to recover automatically
@@ -401,7 +416,11 @@ class Browser:
             return self.book_appointment()
 
         # Step 2 – Input Data
-        element = self.wait.until(EC.presence_of_element_located((By.XPATH, f'//button[contains(text(), "Daten erfassen")]')))
+        element = self.wait.until(
+            EC.presence_of_element_located(
+                (By.XPATH, '//button[contains(text(), "Daten erfassen")]')
+            )
+        )
         element.click()
 
         salutation = self.wait.until(EC.presence_of_element_located((By.XPATH, f'//input[@type="radio" and @name="salutation"]//following-sibling::span[contains(text(), "{settings.SALUTATION}")]/..')))
@@ -418,7 +437,14 @@ class Browser:
         enter_form('notificationReceiver', 'MAIL')
 
         try:
-            submit = self.wait.until(EC.element_to_be_clickable((By.XPATH, f'//button[@type="submit" and contains(text(), "Übernehmen")]')))
+            submit = self.wait.until(
+                EC.element_to_be_clickable(
+                    (
+                        By.XPATH,
+                        '//button[@type="submit" and contains(text(), "Übernehmen")]',
+                    )
+                )
+            )
             submit.click()
         except:
             # Button not clickable – timer likely expired due to racing condition; attempting to recover automatically
@@ -426,7 +452,11 @@ class Browser:
             return self.book_appointment()
 
         # Step 3 – Leben zurückbekommen
-        element = self.wait.until(EC.presence_of_element_located((By.XPATH, f'//button[contains(text(), "VERBINDLICH BUCHEN")]')))
+        element = self.wait.until(
+            EC.presence_of_element_located(
+                (By.XPATH, '//button[contains(text(), "VERBINDLICH BUCHEN")]')
+            )
+        )
         element.click()
 
         return self.code_booked

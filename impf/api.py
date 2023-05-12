@@ -111,8 +111,7 @@ class API:
     @property
     def code(self) -> str:
         if self._code: return self._code
-        if self.driver is None: return ''
-        return self.driver.code
+        return '' if self.driver is None else self.driver.code
 
     @code.setter
     def code(self, value: str) -> None:
@@ -135,7 +134,7 @@ class API:
         """ Returns the information of a center given a zip code -
          should probably be at the bottom of the file """
         r = requests.get('https://www.impfterminservice.de/assets/static/impfzentren.json', headers=HEADERS, timeout=10)
-        if not r.status_code == 200 or not r.json(): return
+        if r.status_code != 200 or not r.json(): return
         centers = r.json().get(settings.BUNDESLAND)
         center = [center for center in centers if center.get('PLZ') == zip_code]
         return next(iter(center), '')

@@ -192,4 +192,4 @@ logging.basicConfig(
 class LocationAdapter(logging.LoggerAdapter):
     """ Custom adapter to easily add PLZ to log string """
     def process(self, msg, kwargs):
-        return '%s: %s' % (self.extra['location'], msg), kwargs
+        return f"{self.extra['location']}: {msg}", kwargs

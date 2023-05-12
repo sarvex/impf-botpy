@@ -134,7 +134,7 @@ def telegram_read(match_func: Callable) -> Union[None, str]:
 
 @alert_resilience
 def pushover_send(message: str) -> None:
-    url = f'https://api.pushover.net/1/messages.json'
+    url = 'https://api.pushover.net/1/messages.json'
     data = {
         'token': settings.PUSHOVER_APP_TOKEN,
         'user': settings.PUSHOVER_USER_KEY,
